@@ -1,1 +1,84 @@
+# TIP20 Migration FAQ
 
+## Can a TIP20 token be deployed by extending `ITIP20` like an ERC20 contract?
+
+No. `ITIP20` is an ABI/interface for Tempo's native TIP20 implementation. TIP20 tokens are created through `TIP20Factory` at deterministic native addresses, and their callable surface is the protocol/precompile surface.
+
+Unlike a Solidity ERC20 implementation, a TIP20 token is not deployed as a per-token Solidity contract that an issuer can inherit from or override.
+
+## Can custom methods be added directly to a TIP20 token?
+
+No. Custom per-token methods cannot be added to the TIP20 token address itself.
+
+If a method must appear on the token contract, that requires a protocol-level TIP20 extension. A separate Solidity contract can expose custom methods, but those methods live on the separate contract, not on the TIP20 token address.
+
+## Does TIP20 support roles?
+
+Yes. TIP20 has native role-based access control through:
+
+- `grantRole(bytes32 role, address account)`
+- `revokeRole(bytes32 role, address account)`
+- `renounceRole(bytes32 role)`
+- `hasRole(address account, bytes32 role)`
+- `getRoleAdmin(bytes32 role)`
+- `setRoleAdmin(bytes32 role, bytes32 adminRole)`
+
+TIP20 also exposes built-in role constants such as:
+
+- `ISSUER_ROLE`
+- `PAUSE_ROLE`
+- `UNPAUSE_ROLE`
+- `BURN_BLOCKED_ROLE`
+
+## Can arbitrary custom roles be created on TIP20?
+
+Custom `bytes32` roles can be granted and checked with TIP20's RBAC functions, but only protocol-defined roles affect native TIP20 behavior.
+
+For example, a custom role like `TRANSFER_AGENT_ROLE` can exist as role data, but TIP20 will not automatically attach new native behavior to it unless the protocol implementation is extended or another contract explicitly checks that role.
+
+## Can a manager or control-plane contract be the entrypoint for TIP20 workflows?
+
+Yes. A separate Solidity manager contract can be the entrypoint for flows such as `subscribe`, `redeem`, issuance, redemption, pausing, or other admin workflows.
+
+The manager contract can call TIP20 methods. For example, the TIP20 token can grant `ISSUER_ROLE` or `PAUSE_ROLE` to the manager contract, and the manager can expose business-specific methods that call `mint`, `burn`, `pause`, or other TIP20 functions.
+
+## How should RBAC work for a generic manager contract?
+
+Use two RBAC layers:
+
+1. Manager-contract RBAC for business roles, such as `TRANSFER_AGENT_ROLE`, `SUBSCRIPTION_ADMIN_ROLE`, `REDEMPTION_ADMIN_ROLE`, or `COMPLIANCE_ADMIN_ROLE`.
+2. TIP20 native RBAC for protocol roles granted to the manager contract, such as `ISSUER_ROLE`, `PAUSE_ROLE`, `UNPAUSE_ROLE`, or `BURN_BLOCKED_ROLE`.
+
+In this model, users and operators interact with the manager contract. The TIP20 token grants native authority to the manager, not to every individual operator.
+
+## Does a manager contract enforce custom logic on direct TIP20 transfers?
+
+No. A manager contract only controls flows routed through the manager.
+
+Current TIP20/precompile execution cannot call out to arbitrary EVM contracts for enforcement. That means a manager contract cannot be used as a callback hook that TIP20 invokes during every direct token transfer.
+
+If transfer restrictions must apply to direct `transfer` or `transferFrom` calls, they must be expressible through native TIP20 or TIP-403 policy mechanisms, or require a protocol-level extension.
+
+## What is the recommended migration pattern for ERC20 contracts with custom helper methods?
+
+Use a manager/control-plane contract for workflow and business logic, and use TIP20 for the native token.
+
+For example:
+
+- Deploy the TIP20 through `TIP20Factory`.
+- Deploy a Solidity manager contract.
+- Grant the manager the needed TIP20 native roles.
+- Define business roles on the manager contract.
+- Route `subscribe`, `redeem`, issuance, redemption, and admin workflows through the manager.
+- Use native TIP20/TIP-403 mechanisms for behavior that must be enforced on direct token transfers.
+
+## When is a protocol-level TIP20 extension needed?
+
+A protocol-level extension is needed when the desired behavior must:
+
+- appear as a method on the TIP20 token address itself;
+- be enforced inside every TIP20 transfer;
+- change native mint, burn, pause, role, or transfer-policy semantics; or
+- require TIP20/precompile code to call out to arbitrary EVM contract logic.
+
+Manager contracts are useful for orchestration and issuer workflows, but they do not change TIP20's native callable surface.
