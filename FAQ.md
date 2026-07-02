@@ -12,6 +12,19 @@ No. Custom per-token methods cannot be added to the TIP20 token address itself.
 
 If a method must appear on the token contract, that requires a protocol-level TIP20 extension. A separate Solidity contract can expose custom methods, but those methods live on the separate contract, not on the TIP20 token address.
 
+## What are the TIP20 alternatives to `increaseAllowance` and `decreaseAllowance`?
+
+TIP20/USDY does not expose OpenZeppelin-style atomic allowance delta helpers such as `increaseAllowance(spender, addedValue)` or `decreaseAllowance(spender, subtractedValue)`.
+
+Use exact allowance-setting methods instead:
+
+- To increase an allowance, read `allowance(owner, spender)` off-chain and call `approve(spender, currentAllowance + delta)`.
+- To decrease an allowance, read `allowance(owner, spender)` off-chain and call `approve(spender, currentAllowance - delta)`, or call `approve(spender, 0)` to revoke it.
+- For a safer reset flow, call `approve(spender, 0)` and then call `approve(spender, newAmount)`.
+- For signature-based approval, use `permit(owner, spender, value, ...)` to set an exact allowance without requiring the owner to send the approval transaction.
+
+These flows are client-side workarounds and do not provide the same atomic delta semantics as `increaseAllowance` or `decreaseAllowance`. If a token integration requires true atomic allowance increases or decreases on the TIP20 token address, that would require a protocol-level TIP20 extension.
+
 ## Does TIP20 support roles?
 
 Yes. TIP20 has native role-based access control through:
