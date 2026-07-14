@@ -126,3 +126,11 @@ A protocol-level extension is needed when the desired behavior must:
 - require TIP20/precompile code to call out to arbitrary EVM contract logic.
 
 Manager contracts are useful for orchestration and issuer workflows, but they do not change TIP20's native callable surface.
+
+## How does `BURN_BLOCKED_ROLE` work, and why can `burnBlocked` fail?
+
+An authorized operator calls `burnBlocked(address from, uint256 amount)` on the TIP20 token. This is distinct from the ordinary `burn` method: the caller must hold `BURN_BLOCKED_ROLE`, and `from` must be unauthorized as a **sender** under the token's active TIP-403 transfer policy.
+
+The target qualifies when it is included in a TIP-403 blocklist or excluded from a TIP-403 whitelist. With `ALLOW_ALL` or no restrictive policy, the target remains authorized as a sender and the call reverts with `PolicyForbids()`.
+
+The token must also be unpaused, `from` must hold at least `amount`, and protected system custody addresses cannot be targeted. Depending on which prerequisite fails, the call can revert with `Unauthorized`, `ContractPaused`, `PolicyForbids`, `InsufficientBalance`, or `ProtectedAddress`.
