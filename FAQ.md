@@ -41,6 +41,12 @@ Use exact allowance-setting methods instead:
 
 These flows are client-side workarounds and do not provide the same atomic delta semantics as `increaseAllowance` or `decreaseAllowance`. If a token integration requires true atomic allowance increases or decreases on the TIP20 token address, that would require a protocol-level TIP20 extension.
 
+## How does a TIP-403 whitelist apply to a delegated `transferFrom` spender?
+
+For `transferFrom(from, to, amount)`, TIP-403 evaluates `from` as the sender and `to` as the recipient. It does not evaluate the delegated spender (`msg.sender`) that invokes `transferFrom`. The spender is separately authorized by the TIP20 allowance check.
+
+Therefore, TIP-403 cannot block a sanctioned spender when both `from` and `to` are authorized by the token transfer policy. Token holders must avoid granting or must revoke allowances to such spenders, and integrations can enforce additional spender checks in their own contracts. Enforcing spender authorization globally for direct TIP20 `transferFrom` calls would require a protocol-level extension.
+
 ## Does TIP20 support roles?
 
 Yes. TIP20 has native role-based access control through:
