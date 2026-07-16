@@ -134,3 +134,19 @@ An authorized operator calls `burnBlocked(address from, uint256 amount)` on the 
 The target qualifies when it is included in a TIP-403 blocklist or excluded from a TIP-403 whitelist. With `ALLOW_ALL` or no restrictive policy, the target remains authorized as a sender and the call reverts with `PolicyForbids()`.
 
 The token must also be unpaused, `from` must hold at least `amount`, and protected system custody addresses cannot be targeted. Depending on which prerequisite fails, the call can revert with `Unauthorized`, `ContractPaused`, `PolicyForbids`, `InsufficientBalance`, or `ProtectedAddress`.
+
+## How should a TIP20 asset integrate with Chainlink CCIP?
+
+Use the standard TIP20 implementation with Chainlink's existing CCIP token pool. The integration does not require changes to the TIP20 contract:
+
+1. Confirm the asset, initial lane, and canonical source chain, such as Solana to Tempo or Ethereum to Tempo.
+2. Confirm the bridge model. For a lock-and-mint lane, the pool locks the canonical asset on the source chain and mints its TIP20 representation on Tempo.
+3. Deploy the token through `TIP20Factory`.
+4. Configure the audited CCIP token pool and grant it `ISSUER_ROLE` on the TIP20. This role lets the pool mint and burn tokens for cross-chain transfers.
+5. Review audit coverage. Tempo can provide chain and TIP20 audits, and the CCIP implementer can provide token-pool audits. The issuer decides whether its policies require an additional integration-specific review.
+6. Choose a devnet deployment or approve a direct mainnet deployment.
+7. Configure transfer capacity and its refill period. A starting point proposed for PRIME was capacity equal to 1–2% of supply with a one-hour refill for a high-volume asset. A four-hour refill is also common. These are configurable operating parameters, not protocol requirements.
+8. Provide issuer-controlled multisig addresses for each relevant chain so token-pool and CCT ownership can be transferred after deployment.
+9. Deploy the lane, test transfers in both directions, verify roles and rate limits, and complete the ownership handoff.
+
+The Figure PRIME integration selected Solana to Tempo with lock-and-mint because PRIME had deeper liquidity on Solana. Figure approved a direct mainnet deployment. At the cited supply of 156,221,832 PRIME, the proposed 1–2% transfer capacity was approximately 1.56 million–3.12 million tokens.
