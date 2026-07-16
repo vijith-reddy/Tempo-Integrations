@@ -141,12 +141,13 @@ Use the standard TIP20 implementation with Chainlink's existing CCIP token pool.
 
 1. Confirm the asset, initial lane, and canonical source chain, such as Solana to Tempo or Ethereum to Tempo.
 2. Confirm the bridge model. For a lock-and-mint lane, the pool locks the canonical asset on the source chain and mints its TIP20 representation on Tempo.
-3. Deploy the token through `TIP20Factory`.
-4. Configure the audited CCIP token pool and grant it `ISSUER_ROLE` on the TIP20. This role lets the pool mint and burn tokens for cross-chain transfers.
-5. Review audit coverage. Tempo can provide chain and TIP20 audits, and the CCIP implementer can provide token-pool audits. The issuer decides whether its policies require an additional integration-specific review.
-6. Choose a devnet deployment or approve a direct mainnet deployment.
-7. Configure transfer capacity and its refill period. A starting point proposed for PRIME was capacity equal to 1–2% of supply with a one-hour refill for a high-volume asset. A four-hour refill is also common. These are configurable operating parameters, not protocol requirements.
-8. Provide issuer-controlled multisig addresses for each relevant chain so token-pool and CCT ownership can be transferred after deployment.
-9. Deploy the lane, test transfers in both directions, verify roles and rate limits, and complete the ownership handoff.
+3. For a TIP20 token deployment, the Tempo team must confirm the TIP20 `currency` field with the Chainlink team before deployment.
+4. Deploy the token through `TIP20Factory`.
+5. Configure the audited CCIP token pool and grant it `ISSUER_ROLE` on the TIP20. This role lets the pool mint and burn tokens for cross-chain transfers.
+6. Review audit coverage. Tempo can provide chain and TIP20 audits, and the CCIP implementer can provide token-pool audits. The issuer decides whether its policies require an additional integration-specific review.
+7. Choose a devnet deployment or approve a direct mainnet deployment.
+8. Configure transfer capacity and its refill period. A starting point proposed for PRIME was capacity equal to 1–2% of supply with a one-hour refill for a high-volume asset. A four-hour refill is also common. These are configurable operating parameters, not protocol requirements.
+9. Provide issuer-controlled multisig addresses for each relevant chain so token-pool and CCT ownership can be transferred after deployment.
+10. Deploy the lane, test transfers in both directions, verify roles and rate limits, and complete the ownership handoff.
 
 The Figure PRIME integration selected Solana to Tempo with lock-and-mint because PRIME had deeper liquidity on Solana. Figure approved a direct mainnet deployment. At the cited supply of 156,221,832 PRIME, the proposed 1–2% transfer capacity was approximately 1.56 million–3.12 million tokens.
