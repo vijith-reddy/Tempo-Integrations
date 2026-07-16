@@ -151,3 +151,43 @@ Use the standard TIP20 implementation with Chainlink's existing CCIP token pool.
 10. Deploy the lane, test transfers in both directions, verify roles and rate limits, and complete the ownership handoff.
 
 The Figure PRIME integration selected Solana to Tempo with lock-and-mint because PRIME had deeper liquidity on Solana. Figure approved a direct mainnet deployment. At the cited supply of 156,221,832 PRIME, the proposed 1–2% transfer capacity was approximately 1.56 million–3.12 million tokens.
+
+## What does the TIP20 `currency` field mean?
+
+`currency` is an immutable protocol classification and eligibility tag. It is not a price feed and does not select a trading pair.
+
+The current protocol gives the exact value `USD` special behavior: USD-classified TIP20s can be selected as user and validator fee tokens, participate in the Fee AMM, and form pairs in the native Stablecoin DEX. Other currency strings currently have no special protocol behavior.
+
+Although integrations should use meaningful denomination identifiers, the current implementation accepts arbitrary currency strings rather than enforcing ISO 4217 codes.
+
+## What is the difference between `currency` and `quoteToken`?
+
+`currency` classifies the unit of account that one token unit is intended to track approximately 1:1. It is immutable after deployment.
+
+`quoteToken` is the mutable liquidity and routing edge for the token. It identifies the token's direct pair in the native DEX and links it into the quote-token tree rooted at `pathUSD`. The DEX uses that tree to find direct and multi-hop routes, while the Fee AMM can use `quoteToken` as an intermediate route when direct liquidity is unavailable.
+
+For USD-classified tokens, the selected quote token must also be USD-classified.
+
+## How should an integration choose `currency`?
+
+Choose the asset or unit of account that one token unit remains approximately 1:1 with:
+
+- A USD stablecoin that stays near $1: `USD`.
+- A rebasing USD yield token whose balance grows while each unit stays near $1: `USD`.
+- A 1:1 wrapped BTC token such as WBTC or cbBTC: `BTC`.
+- An accumulating or share-price token whose unit redemption value rises over time: use its own asset identifier, such as `PRIME` or `cbETH`, rather than `USD` or `ETH`.
+- A non-rebasing wrapper around a rebasing asset generally becomes an accumulating token: its balance stays fixed while its redemption value rises, so it should use its own asset identifier unless the wrapper itself remains near 1:1 with the underlying denomination.
+
+The deciding question is unit-price behavior, not whether the asset generates yield.
+
+## Why should an accumulating USD-backed token not use `currency = USD`?
+
+Classifying a token as `USD` opts it into infrastructure designed for near-par USD assets. In particular, the Fee AMM converts between a user's fee token and a validator's preferred fee token at a fixed near-par rate. If one unit of an accumulating token is worth more than $1, treating it as USD would economically misprice that conversion.
+
+The native Stablecoin DEX is price-aware, but it is restricted to USD-classified pairs and a bounded near-par price range. An accumulating asset can eventually move outside those assumptions.
+
+## Can transaction fees be paid with non-USD TIP20s?
+
+No. The current Fee Manager requires both user-selected and validator-selected fee tokens to have `currency == "USD"`.
+
+A user may pay fees in one USD-classified TIP20 while the validator receives another, such as USDC. The Fee AMM handles that conversion directly or, when necessary, through the user's `quoteToken`. This is why the `USD` classification must be reserved for assets that remain near dollar parity.
