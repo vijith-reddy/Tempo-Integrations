@@ -1,5 +1,11 @@
 # TIP20 Migration FAQ
 
+## Does Tempo support Safe multisig accounts and hardware-key signers?
+
+Yes. Safe support is live on Tempo through the [Safe app](https://app.safe.global/) and supports multisig hardware-key signers.
+
+To create a new Safe, select **Create new Safe**, choose **Tempo**, add the signer addresses and confirmation threshold required by your security policy, then deploy it using pathUSD for gas. To use an existing Safe address, select **Add Safe accounts to the workspace** and add it on Tempo.
+
 ## Can a TIP20 token be deployed by extending `ITIP20` like an ERC20 contract?
 
 No. `ITIP20` is an ABI/interface for Tempo's native TIP20 implementation. TIP20 tokens are created through `TIP20Factory` at deterministic native addresses, and their callable surface is the protocol/precompile surface.
